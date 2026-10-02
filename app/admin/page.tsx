@@ -48,7 +48,6 @@ export default function Admin(){
     const filename = `tapsmza-${norm}`
 
     if(format==='svg'){
-      // SVG con texto incluido
       const withText = svgData.replace('</svg>', `<text x="50%" y="98%" text-anchor="middle" font-family="monospace" font-size="40" font-weight="bold" fill="black">${norm}</text></svg>`)
       const blob = new Blob([withText],{type:'image/svg+xml;charset=utf-8'});
       const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`${filename}.svg`; a.click();
@@ -79,14 +78,13 @@ export default function Admin(){
 
   return <div style={{background:'#0a0a0a',minHeight:'100vh',color:'#fff',padding:16,maxWidth:700,margin:'0 auto'}}>
     <h1>TAPS MZA - Panel</h1>
-    <div style={{display:'flex',gap:8,marginTop:12}}><button onClick={()=>setTab('gen')} style={{flex:1,padding:12,borderRadius:12,border:0,background:tab==='gen'?'#fff':'#222',color:tab==='gen'?'#000':'#fff',fontWeight:'bold'}}>1. GENERAR QRs VÍRGENES</button><button onClick={()=>setTab('list')} style={{flex:1,padding:12,borderRadius:12,border:0,background:tab==='list'?'#fff':'#222',color:tab==='list'?'#000':'#fff',fontWeight:'bold'}}>2. VENDER / ASIGNAR</button></div>
+    <div style={{display:'flex',gap:8,marginTop:12}}><button onClick={()=>setTab('gen')} style={{flex:1,padding:12,borderRadius:12,border:0,background:tab==='gen'?'#fff':'#222',color:tab==='gen'?'#000':'#fff',fontWeight:'bold'}}>1. GENERAR QRs VIRGENES</button><button onClick={()=>setTab('list')} style={{flex:1,padding:12,borderRadius:12,border:0,background:tab==='list'?'#fff':'#222',color:tab==='list'?'#000':'#fff',fontWeight:'bold'}}>2. VENDER / ASIGNAR</button></div>
 
-    {/* HIDDEN RENDER PARA DESCARGA EN ALTA */}
     <div style={{position:'fixed', left:-9999, top:-9999}}>{Array.from({length:1000},(_,i)=>{const c=pad(i+1); return <div key={c} id={`qr-hidden-${c}`}><QRCodeSVG value={`${SITE}/${c}`} size={1000}/></div>})}<div id={`qr-hidden-${normalize(genCode)}`}><QRCodeSVG value={`${SITE}/${normalize(genCode)}`} size={1000}/></div></div>
 
     {tab==='gen' && <div style={{background:'#171717',padding:16,borderRadius:16,marginTop:20}}>
       <h3 style={{margin:0}}>Generador libre (imprenta)</h3>
-      <p style={{opacity:0.6,fontSize:12}}>Los tachados en gris ya están vendidos. No los vuelvas a imprimir.</p>
+      <p style={{opacity:0.6,fontSize:12}}>Los tachados en gris ya estan vendidos. No los vuelvas a imprimir.</p>
 
       <label style={{fontSize:12,opacity:0.7}}>Probar un solo QR:</label>
       <div style={{display:'flex',gap:8,marginTop:6}}><span style={{padding:12,background:'#000',borderRadius:'10px 0 0 10px',border:'1px solid #333',borderRight:0,fontSize:12,opacity:0.6}}>{SITE}/</span><input value={genCode} onChange={e=>setGenCode(e.target.value)} style={{flex:1,padding:12,borderRadius:'0 10px 10px 0',border:'1px solid #333',background:'#000',color:'#fff'}}/><button onClick={()=>downloadQR(genCode,'png')} style={{padding:'0 16px',borderRadius:10,border:0,background:'#fff',color:'#000',fontWeight:'bold'}}>PNG</button><button onClick={()=>downloadQR(genCode,'svg')} style={{padding:'0 16px',borderRadius:10,border:0,background:'#333',color:'#fff'}}>SVG</button></div>
@@ -109,16 +107,16 @@ export default function Admin(){
           </div>
         })}
       </div>
-      <p style={{fontSize:11,opacity:0.5,marginTop:8}}>Descarga sale como tapsmza-0001.png con el código ya impreso abajo. Para Canva usa SVG.</p>
+      <p style={{fontSize:11,opacity:0.5,marginTop:8}}>Descarga sale como tapsmza-0001.png con el codigo ya impreso abajo. Para Canva usa SVG.</p>
     </div>}
 
     {tab==='list' && <div style={{marginTop:20}}>
       <div style={{background:'#171717',padding:16,borderRadius:16}}>
         <h3 style={{margin:0}}>Vender / Asignar link</h3>
 
-        <label style={{fontSize:11,opacity:0.6,marginTop:12,display:'block'}}>1. Seleccioná el código que tenés en mano:</label>
+        <label style={{fontSize:11,opacity:0.6,marginTop:12,display:'block'}}>1. Selecciona el codigo que tenes en mano:</label>
         <select value={code} onChange={e=>setCode(e.target.value)} style={{width:'100%',padding:14,borderRadius:10,border:'1px solid #333',background:'#000',color:'#fff',marginTop:6}}>
-          <option value="">-- Elegí uno disponible --</option>
+          <option value="">-- Elegi uno disponible --</option>
           {Array.from({length:1000},(_,i)=>{
             const c=pad(i+1); const isAssigned = assignedSet.has(c); const data = assignedMap.get(c);
             return <option key={c} value={c} disabled={isAssigned} style={{background: isAssigned?'#333':'#000', color: isAssigned?'#777':'#fff'}}>
@@ -128,12 +126,12 @@ export default function Admin(){
         </select>
 
         {code &&!assignedSet.has(normalize(code)) && <div style={{background:'#000',border:'1px dashed #444',padding:12,borderRadius:10,marginTop:12}}>
-          <div style={{fontSize:11,opacity:0.6}}>URL final para NFC Tools (copiá y pegá esto):</div>
+          <div style={{fontSize:11,opacity:0.6}}>URL final para NFC Tools (copia y pega esto):</div>
           <div style={{display:'flex',gap:8,marginTop:6,alignItems:'center'}}>
             <div style={{flex:1,background:'#111',padding:10,borderRadius:8,fontSize:12,wordBreak:'break-all',fontFamily:'monospace'}}>{SITE}/{normalize(code)}</div>
-            <button onClick={()=>copy(`${SITE}/${normalize(code)}`, 'nfc')} style={{padding:'10px 14px',borderRadius:8,border:0,background:copied==='nfc'?'#00ff88':'#fff',color:'#000',fontWeight:'bold'}}>{copied==='nfc'?'¡COPIADO!':'COPIAR'}</button>
+            <button onClick={()=>copy(`${SITE}/${normalize(code)}`, 'nfc')} style={{padding:'10px 14px',borderRadius:8,border:0,background:copied==='nfc'?'#00ff88':'#fff',color:'#000',fontWeight:'bold'}}>{copied==='nfc'?'COPIADO!':'COPIAR'}</button>
           </div>
-          <div style={{fontSize:10,opacity:0.5,marginTop:6}}>En NFC Tools > Write > Add record > URL > pegá esto.</div>
+          <div style={{fontSize:10,opacity:0.5,marginTop:6}}>En NFC Tools: Write - Add record - URL - pega esto.</div>
         </div>}
 
         <input value={name} onChange={e=>setName(e.target.value)} placeholder="Nombre negocio (ej: Don Mario)" style={{width:'100%',padding:12,borderRadius:10,border:'1px solid #333',background:'#000',color:'#fff',marginTop:12}}/>
