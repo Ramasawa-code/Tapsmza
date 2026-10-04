@@ -48,9 +48,11 @@ export default function Admin(){
     const filename = `tapsmza-${norm}`
 
     if(format==='svg'){
-      const withText = svgData.replace('</svg>', `<text x="50%" y="98%" text-anchor="middle" font-family="monospace" font-size="40" font-weight="bold" fill="black">${norm}</text></svg>`)
-      const blob = new Blob([withText],{type:'image/svg+xml;charset=utf-8'});
-      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`${filename}.svg`; a.click();
+      const whiteBg = `<rect x="0" y="0" width="1000" height="1000" fill="white"/>`
+      const withText = svgData.replace('</svg>', `<text x="500" y="1095" text-anchor="middle" font-family="monospace" font-size="70" font-weight="bold" fill="black">${norm}</text></svg>`)
+      const finalSvg = withText.replace('<svg', `<svg width="1000" height="1150" viewBox="0 0 1000 1150"`).replace('>', `>${whiteBg}`)
+      const blob = new Blob([finalSvg],{type:'image/svg+xml;charset=utf-8'});
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`${filename}-transparente.svg`; a.click();
     } else {
       const canvas=document.createElement('canvas');
       const img=new Image();
@@ -59,11 +61,22 @@ export default function Admin(){
       img.onload=()=>{
         canvas.width=1000; canvas.height=1150;
         const ctx=canvas.getContext('2d')!;
-        ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+        // FONDO TOTAL TRANSPARENTE
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        // SOLO EL CUADRADO DEL QR CON BLANCO PARA QUE SE LEA
+        ctx.fillStyle='#fff';
+        ctx.fillRect(0,0,1000,1000);
+        // QR
         ctx.drawImage(img,0,0,1000,1000);
-        ctx.fillStyle='#000'; ctx.font='bold 70px monospace'; ctx.textAlign='center';
-        ctx.fillText(norm, 500, 1100);
-        const a=document.createElement('a'); a.download=`${filename}.png`; a.href=canvas.toDataURL('image/png'); a.click();
+        // NUMERO SIN FONDO BLANCO - DIRECTO TRANSPARENTE
+        ctx.fillStyle='#000';
+        ctx.font='bold 70px monospace';
+        ctx.textAlign='center';
+        ctx.fillText(norm, 500, 1095);
+        const a=document.createElement('a');
+        a.download=`${filename}-transparente.png`;
+        a.href=canvas.toDataURL('image/png');
+        a.click();
         URL.revokeObjectURL(objUrl)
       };
       img.src=objUrl;
@@ -107,7 +120,7 @@ export default function Admin(){
           </div>
         })}
       </div>
-      <p style={{fontSize:11,opacity:0.5,marginTop:8}}>Descarga sale como tapsmza-0001.png con el codigo ya impreso abajo. Para Canva usa SVG.</p>
+      <p style={{fontSize:11,opacity:0.5,marginTop:8}}>Descarga sale como tapsmza-0001-transparente.png con fondo transparente para Canva. QR con blanco interno.</p>
     </div>}
 
     {tab==='list' && <div style={{marginTop:20}}>
