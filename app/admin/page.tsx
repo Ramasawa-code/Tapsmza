@@ -38,7 +38,7 @@ export default function Admin(){
     setCode(''); setUrl(''); setName(''); await fetchLinks();
     const finalUrl = `${SITE}/${c}`
     navigator.clipboard.writeText(finalUrl)
-    alert(`¡LISTO! ${c} activado.\n\nURL para NFC Tools copiada:\n${finalUrl}`)
+    alert(`¡LISTO! ${c} activado.\nURL para NFC Tools copiada:\n${finalUrl}`)
   }
 
   function downloadQR(cod: string, format:'png'|'svg'){
@@ -50,9 +50,10 @@ export default function Admin(){
     const textFill = qrColor === 'black'? 'black' : 'white';
 
     if(format==='svg'){
-      const whiteBg = `<rect x="0" y="0" width="1000" height="1000" fill="white"/>`
-      const withText = svgData.replace('</svg>', `<text x="500" y="1095" text-anchor="middle" font-family="monospace" font-size="70" font-weight="bold" fill="${textFill}">${norm}</text></svg>`)
-      const finalSvg = withText.replace('<svg', `<svg width="1000" height="1150" viewBox="0 0 1000 1150"`).replace('>', `>${whiteBg}`)
+      const bg = `<rect x="0" y="0" width="1100" height="1100" rx="80" ry="80" fill="white"/>`
+      const withText = svgData.replace('</svg>', `<text x="550" y="1190" text-anchor="middle" font-family="monospace" font-size="70" font-weight="bold" fill="${textFill}">${norm}</text></svg>`)
+      // QR dentro del fondo blanco con padding 50px
+      const finalSvg = `<svg width="1100" height="1250" viewBox="0 0 1100 1250" xmlns="http://www.w3.org/2000/svg">${bg}<g transform="translate(50,50)">${svgData.replace(/<svg[^>]*>/,'').replace('</svg>','')}</g><text x="550" y="1190" text-anchor="middle" font-family="monospace" font-size="70" font-weight="bold" fill="${textFill}">${norm}</text></svg>`
       const blob = new Blob([finalSvg],{type:'image/svg+xml;charset=utf-8'});
       const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`${filename}.svg`; a.click();
     } else {
@@ -61,16 +62,24 @@ export default function Admin(){
       const blob=new Blob([svgData],{type:'image/svg+xml;charset=utf-8'});
       const objUrl=URL.createObjectURL(blob);
       img.onload=()=>{
-        canvas.width=1000; canvas.height=1150;
+        canvas.width=1100; canvas.height=1250;
         const ctx=canvas.getContext('2d')!;
         ctx.clearRect(0,0,canvas.width,canvas.height);
+        // Fondo blanco redondeado solo para el QR
         ctx.fillStyle='#fff';
-        ctx.fillRect(0,0,1000,1000);
-        ctx.drawImage(img,0,0,1000,1000);
+        const r=80;
+        ctx.beginPath();
+        ctx.moveTo(r,0); ctx.lineTo(1100-r,0); ctx.quadraticCurveTo(1100,0,1100,r);
+        ctx.lineTo(1100,1100-r); ctx.quadraticCurveTo(1100,1100,1100-r,1100);
+        ctx.lineTo(r,1100); ctx.quadraticCurveTo(0,1100,0,1100-r);
+        ctx.lineTo(0,r); ctx.quadraticCurveTo(0,0,r,0); ctx.closePath(); ctx.fill();
+        // QR con padding
+        ctx.drawImage(img,50,50,1000,1000);
+        // Numero sin fondo
         ctx.fillStyle=textFill;
         ctx.font='bold 70px monospace';
         ctx.textAlign='center';
-        ctx.fillText(norm, 500, 1095);
+        ctx.fillText(norm, 550, 1190);
         const a=document.createElement('a');
         a.download=`${filename}.png`;
         a.href=canvas.toDataURL('image/png');
@@ -85,17 +94,17 @@ export default function Admin(){
     navigator.clipboard.writeText(text); setCopied(id); setTimeout(()=>setCopied(''),2000)
   }
 
-  if(!auth) return <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#0a0a0a'}}><form onSubmit={login} style={{background:'#171717',padding:32,borderRadius:24,width:320}}><h2 style={{color:'#fff'}}>TAPS Admin</h2><input value={pass} onChange={e=>setPass(e.target.value)} type="password" placeholder="Contraseña" style={{width:'100%',padding:14,borderRadius:12,border:'1px solid #333',background:'#0a0a0a',color:'#fff',marginTop:12}}/><button style={{width:'100%',marginTop:12,padding:14,borderRadius:12,background:'#fff',color:'#000',fontWeight:'bold',border:0}}>Entrar</button></form></div>
+  if(!auth) return <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#0a0a0a'}}><form onSubmit={login} style={{background:'#171717',padding:32,borderRadius:24,width:320}}><h2 style={{color:'#fff'}}>TAPS Admin</h2><input value={pass} onChange={e=>setPass(e.target.value)} type="password" placeholder="Contraseña" style={{width:'100%',padding:14,borderRadius:12,border:'1px solid #333',background:'#0a0a0a',color:'#fff',marginTop:12}}/><button style={{width:'100%',marginTop:12,padding:14,borderRadius:12,background:'#fff',color:'#000',fontWeight:'bold',border:'none'}}>Entrar</button></form></div>
 
   return <div style={{background:'#0a0a0a',minHeight:'100vh',color:'#fff',padding:16,maxWidth:700,margin:'0 auto'}}>
     <h1>TAPS MZA - Panel</h1>
-    <div style={{display:'flex',gap:8,marginTop:12}}><button onClick={()=>setTab('gen')} style={{flex:1,padding:12,borderRadius:12,border:0,background:tab==='gen'?'#fff':'#222',color:tab==='gen'?'#000':'#fff',fontWeight:'bold'}}>1. GENERAR QRs VIRGENES</button><button onClick={()=>setTab('list')} style={{flex:1,padding:12,borderRadius:12,border:0,background:tab==='list'?'#fff':'#222',color:tab==='list'?'#000':'#fff',fontWeight:'bold'}}>2. VENDER / ASIGNAR</button></div>
+    <div style={{display:'flex',gap:8,marginTop:12}}><button onClick={()=>setTab('gen')} style={{flex:1,padding:12,borderRadius:12,border:'none',background:tab==='gen'?'#fff':'#222',color:tab==='gen'?'#000':'#fff',fontWeight:'bold'}}>1. GENERAR QRs VIRGENES</button><button onClick={()=>setTab('list')} style={{flex:1,padding:12,borderRadius:12,border:'none',background:tab==='list'?'#fff':'#222',color:tab==='list'?'#000':'#fff',fontWeight:'bold'}}>2. VENDER / ASIGNAR</button></div>
 
     <div style={{position:'fixed', left:-9999, top:-9999}}>{Array.from({length:1000},(_,i)=>{const c=pad(i+1); return <div key={c} id={`qr-hidden-${c}`}><QRCodeSVG value={`${SITE}/${c}`} size={1000}/></div>})}<div id={`qr-hidden-${normalize(genCode)}`}><QRCodeSVG value={`${SITE}/${normalize(genCode)}`} size={1000}/></div></div>
 
     {tab==='gen' && <div style={{background:'#171717',padding:16,borderRadius:16,marginTop:20}}>
       <h3 style={{margin:0}}>Generador libre (imprenta)</h3>
-      <p style={{opacity:0.6,fontSize:12}}>Los tachados en gris ya estan vendidos. No los vuelvas a imprimir.</p>
+      <p style={{opacity:0.6,fontSize:12}}>Ahora con fondo blanco redondeado + numero transparente</p>
 
       <div style={{background:'#000',border:'1px solid #333',borderRadius:12,padding:12,marginTop:12,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
         <div><div style={{fontSize:12,fontWeight:'bold'}}>Color del número</div><div style={{fontSize:10,opacity:0.6}}>Blanca = negro, Negra = blanco</div></div>
@@ -109,7 +118,7 @@ export default function Admin(){
       <div style={{display:'flex',gap:8,marginTop:6}}><span style={{padding:12,background:'#000',borderRadius:'10px 0 0 10px',border:'1px solid #333',borderRight:0,fontSize:12,opacity:0.6}}>{SITE}/</span><input value={genCode} onChange={e=>setGenCode(e.target.value)} style={{flex:1,padding:12,borderRadius:'0 10px 10px 0',border:'1px solid #333',background:'#000',color:'#fff'}}/><button onClick={()=>downloadQR(genCode,'png')} style={{padding:'0 16px',borderRadius:10,background:qrColor==='white'?'#000':'#fff',color:qrColor==='white'?'#fff':'#000',border:qrColor==='white'?'1px solid #fff':'none',fontWeight:'bold'}}>PNG {qrColor==='white'?'B':'N'}</button><button onClick={()=>downloadQR(genCode,'svg')} style={{padding:'0 16px',borderRadius:10,border:'none',background:'#333',color:'#fff'}}>SVG</button></div>
 
       <hr style={{margin:'20px 0',borderColor:'#222'}}/>
-      <h4>Tanda para imprenta (ej: 1 a 10)</h4>
+      <h4>Tanda para imprenta</h4>
       <div style={{display:'flex',gap:8}}><input type="number" value={from} onChange={e=>setFrom(parseInt(e.target.value)||1)} style={{flex:1,padding:12,borderRadius:10,border:'1px solid #333',background:'#000',color:'#fff'}}/><input type="number" value={to} onChange={e=>setTo(parseInt(e.target.value)||10)} style={{flex:1,padding:12,borderRadius:10,border:'1px solid #333',background:'#000',color:'#fff'}}/></div>
 
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginTop:12, maxHeight:500, overflow:'auto'}}>
@@ -117,7 +126,7 @@ export default function Admin(){
           const n=from+i; const c=pad(n); const isAssigned = assignedSet.has(c); const data = assignedMap.get(c);
           return <div key={c} style={{background:isAssigned?'#1a1a1a':'#000',padding:8,borderRadius:10,textAlign:'center',opacity:isAssigned?0.4:1, border: isAssigned?'1px solid #333':'1px solid #111', position:'relative'}}>
             {isAssigned && <div style={{position:'absolute', top:4, left:4, background:'#ff0000', color:'#fff', fontSize:8, padding:'2px 4px', borderRadius:4}}>VENDIDO</div>}
-            <div style={{background:'#fff',padding:4,borderRadius:6,display:'inline-block', marginTop:isAssigned?14:0}}><QRCodeSVG value={`${SITE}/${c}`} size={80}/></div>
+            <div style={{background:'#fff',padding:6,borderRadius:12,display:'inline-block', marginTop:isAssigned?14:0}}><QRCodeSVG value={`${SITE}/${c}`} size={70}/></div>
             <div style={{fontSize:11,marginTop:4, textDecoration: isAssigned?'line-through': 'none', fontWeight:'bold'}}>{c} {isAssigned?` - ${data?.name}`:''}</div>
             <div style={{display:'flex', gap:4, justifyContent:'center', marginTop:4}}>
               <button disabled={isAssigned} onClick={()=>downloadQR(c,'png')} style={{fontSize:10,padding:'4px 8px',borderRadius:6,background:isAssigned?'#333':qrColor==='white'?'#000':'#fff',color:isAssigned?'#777':qrColor==='white'?'#fff':'#000', fontWeight:'bold', border: qrColor==='white'&&!isAssigned?'1px solid #fff':'none'}}>{isAssigned?'NO':`PNG ${qrColor==='white'?'B':'N'}`}</button>
@@ -126,7 +135,6 @@ export default function Admin(){
           </div>
         })}
       </div>
-      <p style={{fontSize:11,opacity:0.5,marginTop:8}}>Baja como tapsmza-0001-black.png o white.png segun lo que elijas.</p>
     </div>}
 
     {tab==='list' && <div style={{marginTop:20}}>
@@ -138,7 +146,7 @@ export default function Admin(){
           {Array.from({length:1000},(_,i)=>{
             const c=pad(i+1); const isAssigned = assignedSet.has(c); const data = assignedMap.get(c);
             return <option key={c} value={c} disabled={isAssigned} style={{background: isAssigned?'#333':'#000', color: isAssigned?'#777':'#fff'}}>
-              {isAssigned?`❌ ${c} - VENDIDO a ${data?.name} (tachado)` : `✅ ${c} - DISPONIBLE`}
+              {isAssigned?`❌ ${c} - VENDIDO a ${data?.name}` : `✅ ${c} - DISPONIBLE`}
             </option>
           })}
         </select>
@@ -157,7 +165,7 @@ export default function Admin(){
         <h4 style={{opacity:0.7}}>CRM - Vendidas ({links.length}/1000)</h4>
         {links.map((l:any)=>(<div key={l.code} style={{background:'#171717',padding:10,borderRadius:12,marginTop:8,display:'flex',gap:10,alignItems:'center'}}>
           <div style={{background:'#fff',padding:3,borderRadius:6}}><QRCodeSVG value={`${SITE}/${l.code}`} size={36}/></div>
-          <div style={{flex:1}}><b>{l.code}</b> <span style={{background:'#222',fontSize:9,padding:'2px 6px',borderRadius:10,marginLeft:6}}>VENDIDA</span><div style={{fontSize:11,opacity:0.6}}>{l.name}</div><div style={{fontSize:10,opacity:0.4, fontFamily:'monospace'}}>{SITE}/{l.code}</div></div>
+          <div style={{flex:1}}><b>{l.code}</b> <span style={{background:'#222',fontSize:9,padding:'2px 6px',borderRadius:10,marginLeft:6}}>VENDIDA</span><div style={{fontSize:11,opacity:0.6}}>{l.name}</div></div>
           <button onClick={()=>copy(`${SITE}/${l.code}`, l.code)} style={{background:'#222',border:'none',color:'#fff',padding:'8px 10px',borderRadius:8,fontSize:10}}>{copied===l.code?'COPIADO':'COPIAR URL'}</button>
         </div>))}
       </div>
