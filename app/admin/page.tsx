@@ -16,6 +16,7 @@ export default function Admin(){
   const [from, setFrom] = useState(1)
   const [to, setTo] = useState(10)
   const [copied, setCopied] = useState('')
+  const [qrColor, setQrColor] = useState<'black'|'white'>('black')
 
   useEffect(()=>{ if(auth) fetchLinks() }, [auth])
   useEffect(()=>{ if(typeof window!=='undefined' && localStorage.getItem('taps_auth')==='1') setAuth(true) }, [])
@@ -45,14 +46,15 @@ export default function Admin(){
     const el = document.getElementById(`qr-hidden-${norm}`)?.querySelector('svg');
     if(!el) return alert('No se encontró QR');
     const svgData = new XMLSerializer().serializeToString(el);
-    const filename = `tapsmza-${norm}`
+    const filename = `tapsmza-${norm}-${qrColor}`
+    const textFill = qrColor === 'black'? 'black' : 'white';
 
     if(format==='svg'){
       const whiteBg = `<rect x="0" y="0" width="1000" height="1000" fill="white"/>`
-      const withText = svgData.replace('</svg>', `<text x="500" y="1095" text-anchor="middle" font-family="monospace" font-size="70" font-weight="bold" fill="black">${norm}</text></svg>`)
+      const withText = svgData.replace('</svg>', `<text x="500" y="1095" text-anchor="middle" font-family="monospace" font-size="70" font-weight="bold" fill="${textFill}">${norm}</text></svg>`)
       const finalSvg = withText.replace('<svg', `<svg width="1000" height="1150" viewBox="0 0 1000 1150"`).replace('>', `>${whiteBg}`)
       const blob = new Blob([finalSvg],{type:'image/svg+xml;charset=utf-8'});
-      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`${filename}-transparente.svg`; a.click();
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`${filename}.svg`; a.click();
     } else {
       const canvas=document.createElement('canvas');
       const img=new Image();
@@ -61,20 +63,16 @@ export default function Admin(){
       img.onload=()=>{
         canvas.width=1000; canvas.height=1150;
         const ctx=canvas.getContext('2d')!;
-        // FONDO TOTAL TRANSPARENTE
         ctx.clearRect(0,0,canvas.width,canvas.height);
-        // SOLO EL CUADRADO DEL QR CON BLANCO PARA QUE SE LEA
         ctx.fillStyle='#fff';
         ctx.fillRect(0,0,1000,1000);
-        // QR
         ctx.drawImage(img,0,0,1000,1000);
-        // NUMERO SIN FONDO BLANCO - DIRECTO TRANSPARENTE
-        ctx.fillStyle='#000';
+        ctx.fillStyle=textFill;
         ctx.font='bold 70px monospace';
         ctx.textAlign='center';
         ctx.fillText(norm, 500, 1095);
         const a=document.createElement('a');
-        a.download=`${filename}-transparente.png`;
+        a.download=`${filename}.png`;
         a.href=canvas.toDataURL('image/png');
         a.click();
         URL.revokeObjectURL(objUrl)
@@ -99,8 +97,16 @@ export default function Admin(){
       <h3 style={{margin:0}}>Generador libre (imprenta)</h3>
       <p style={{opacity:0.6,fontSize:12}}>Los tachados en gris ya estan vendidos. No los vuelvas a imprimir.</p>
 
-      <label style={{fontSize:12,opacity:0.7}}>Probar un solo QR:</label>
-      <div style={{display:'flex',gap:8,marginTop:6}}><span style={{padding:12,background:'#000',borderRadius:'10px 0 0 10px',border:'1px solid #333',borderRight:0,fontSize:12,opacity:0.6}}>{SITE}/</span><input value={genCode} onChange={e=>setGenCode(e.target.value)} style={{flex:1,padding:12,borderRadius:'0 10px 10px 0',border:'1px solid #333',background:'#000',color:'#fff'}}/><button onClick={()=>downloadQR(genCode,'png')} style={{padding:'0 16px',borderRadius:10,border:0,background:'#fff',color:'#000',fontWeight:'bold'}}>PNG</button><button onClick={()=>downloadQR(genCode,'svg')} style={{padding:'0 16px',borderRadius:10,border:0,background:'#333',color:'#fff'}}>SVG</button></div>
+      <div style={{background:'#000',border:'1px solid #333',borderRadius:12,padding:12,marginTop:12,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <div><div style={{fontSize:12,fontWeight:'bold'}}>Color del número</div><div style={{fontSize:10,opacity:0.6}}>Para tarjeta blanca = negro, negra = blanco</div></div>
+        <div style={{display:'flex',gap:6,background:'#222',padding:4,borderRadius:10}}>
+          <button onClick={()=>setQrColor('black')} style={{padding:'8px 14px',borderRadius:8,border:0,background:qrColor==='black'?'#fff':'transparent',color:qrColor==='black'?'#000':'#fff',fontWeight:'bold',fontSize:12}}>NEGRO</button>
+          <button onClick={()=>setQrColor('white')} style={{padding:'8px 14px',borderRadius:8,border:0,background:qrColor==='white'?'#fff':'transparent',color:qrColor==='white'?'#000':'#fff',fontWeight:'bold',fontSize:12}}>BLANCO</button>
+        </div>
+      </div>
+
+      <label style={{fontSize:12,opacity:0.7, marginTop:12, display:'block'}}>Probar un solo QR:</label>
+      <div style={{display:'flex',gap:8,marginTop:6}}><span style={{padding:12,background:'#000',borderRadius:'10px 0 0 10px',border:'1px solid #333',borderRight:0,fontSize:12,opacity:0.6}}>{SITE}/</span><input value={genCode} onChange={e=>setGenCode(e.target.value)} style={{flex:1,padding:12,borderRadius:'0 10px 10px 0',border:'1px solid #333',background:'#000',color:'#fff'}}/><button onClick={()=>downloadQR(genCode,'png')} style={{padding:'0 16px',borderRadius:10,border:0,background:qrColor==='white'?'#000':'#fff',color:qrColor==='white'?'#fff':'#000',borderWidth:qrColor==='white'?'1px':0,borderStyle:'solid',borderColor:'#fff',fontWeight:'bold'}}>PNG {qrColor.toUpperCase()}</button><button onClick={()=>downloadQR(genCode,'svg')} style={{padding:'0 16px',borderRadius:10,border:0,background:'#333',color:'#fff'}}>SVG</button></div>
 
       <hr style={{margin:'20px 0',borderColor:'#222'}}/>
       <h4>Tanda para imprenta (ej: 1 a 10)</h4>
@@ -114,19 +120,18 @@ export default function Admin(){
             <div style={{background:'#fff',padding:4,borderRadius:6,display:'inline-block', marginTop:isAssigned?14:0}}><QRCodeSVG value={`${SITE}/${c}`} size={80}/></div>
             <div style={{fontSize:11,marginTop:4, textDecoration: isAssigned?'line-through': 'none', fontWeight:'bold'}}>{c} {isAssigned?` - ${data?.name}`:''}</div>
             <div style={{display:'flex', gap:4, justifyContent:'center', marginTop:4}}>
-              <button disabled={isAssigned} onClick={()=>downloadQR(c,'png')} style={{fontSize:10,padding:'4px 8px',borderRadius:6,border:0,background:isAssigned?'#333':'#fff',color:isAssigned?'#777':'#000', fontWeight:'bold'}}>{isAssigned?'NO':'PNG'}</button>
+              <button disabled={isAssigned} onClick={()=>downloadQR(c,'png')} style={{fontSize:10,padding:'4px 8px',borderRadius:6,border:0,background:isAssigned?'#333':qrColor==='white'?'#000':'#fff',color:isAssigned?'#777':qrColor==='white'?'#fff':'#000', fontWeight:'bold', border: qrColor==='white'&&!isAssigned?'1px solid #fff':'0'}}>{isAssigned?'NO':`PNG ${qrColor==='white'?'B':'N'}`}</button>
               <button disabled={isAssigned} onClick={()=>downloadQR(c,'svg')} style={{fontSize:10,padding:'4px 8px',borderRadius:6,border:0,background:'#222',color:isAssigned?'#555':'#fff'}}>{isAssigned?'NO':'SVG'}</button>
             </div>
           </div>
         })}
       </div>
-      <p style={{fontSize:11,opacity:0.5,marginTop:8}}>Descarga sale como tapsmza-0001-transparente.png con fondo transparente para Canva. QR con blanco interno.</p>
+      <p style={{fontSize:11,opacity:0.5,marginTop:8}}>Ahora baja como tapsmza-0001-black.png o white.png. Elegí el color antes de descargar.</p>
     </div>}
 
     {tab==='list' && <div style={{marginTop:20}}>
       <div style={{background:'#171717',padding:16,borderRadius:16}}>
         <h3 style={{margin:0}}>Vender / Asignar link</h3>
-
         <label style={{fontSize:11,opacity:0.6,marginTop:12,display:'block'}}>1. Selecciona el codigo que tenes en mano:</label>
         <select value={code} onChange={e=>setCode(e.target.value)} style={{width:'100%',padding:14,borderRadius:10,border:'1px solid #333',background:'#000',color:'#fff',marginTop:6}}>
           <option value="">-- Elegi uno disponible --</option>
@@ -137,21 +142,17 @@ export default function Admin(){
             </option>
           })}
         </select>
-
         {code &&!assignedSet.has(normalize(code)) && <div style={{background:'#000',border:'1px dashed #444',padding:12,borderRadius:10,marginTop:12}}>
-          <div style={{fontSize:11,opacity:0.6}}>URL final para NFC Tools (copia y pega esto):</div>
+          <div style={{fontSize:11,opacity:0.6}}>URL final para NFC Tools:</div>
           <div style={{display:'flex',gap:8,marginTop:6,alignItems:'center'}}>
             <div style={{flex:1,background:'#111',padding:10,borderRadius:8,fontSize:12,wordBreak:'break-all',fontFamily:'monospace'}}>{SITE}/{normalize(code)}</div>
             <button onClick={()=>copy(`${SITE}/${normalize(code)}`, 'nfc')} style={{padding:'10px 14px',borderRadius:8,border:0,background:copied==='nfc'?'#00ff88':'#fff',color:'#000',fontWeight:'bold'}}>{copied==='nfc'?'COPIADO!':'COPIAR'}</button>
           </div>
-          <div style={{fontSize:10,opacity:0.5,marginTop:6}}>En NFC Tools: Write - Add record - URL - pega esto.</div>
         </div>}
-
         <input value={name} onChange={e=>setName(e.target.value)} placeholder="Nombre negocio (ej: Don Mario)" style={{width:'100%',padding:12,borderRadius:10,border:'1px solid #333',background:'#000',color:'#fff',marginTop:12}}/>
         <input value={url} onChange={e=>setUrl(e.target.value)} placeholder="Link Google Review" style={{width:'100%',padding:12,borderRadius:10,border:'1px solid #333',background:'#000',color:'#fff',marginTop:8}}/>
         <button onClick={save} style={{width:'100%',marginTop:12,padding:14,borderRadius:12,background:'#fff',color:'#000',fontWeight:'bold',border:0}}>Activar Tarjeta {code?normalize(code):''}</button>
       </div>
-
       <div style={{marginTop:16}}>
         <h4 style={{opacity:0.7}}>CRM - Vendidas ({links.length}/1000)</h4>
         {links.map((l:any)=>(<div key={l.code} style={{background:'#171717',padding:10,borderRadius:12,marginTop:8,display:'flex',gap:10,alignItems:'center'}}>
