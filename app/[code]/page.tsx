@@ -26,6 +26,7 @@ export default async function CodePage({
     } catch {}
     redirect(data.url);
   }
+
   return (
     <div style={{display:'flex', minHeight:'100vh', alignItems:'center', justifyContent:'center', flexDirection:'column', padding:24, textAlign:'center', background:'#0a0a0a', color:'#fff'}}>
       <h1>QR Disponible</h1>
