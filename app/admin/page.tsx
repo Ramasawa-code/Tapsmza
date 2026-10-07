@@ -19,8 +19,6 @@ export default function Admin(){
   const [qrColor, setQrColor] = useState('black')
 
   useEffect(()=>{ if(typeof window!=='undefined' && localStorage.getItem('taps_auth')==='1') setAuth(true) }, [])
-
-  // ACA ESTA EL AUTO-REFRESH QUE PEDISTE
   useEffect(()=>{
     if(!auth) return
     async function fetchLinks(){ const res = await fetch('/api/links'); setLinks(await res.json()) }
@@ -62,7 +60,6 @@ export default function Admin(){
     const svgData = new XMLSerializer().serializeToString(el);
     const filename = `tapsmza-${norm}-${qrColor}`
     const textFill = qrColor === 'black'? 'black' : 'white';
-
     if(format==='svg'){
       const finalSvg = `<svg width="1100" height="1250" viewBox="0 0 1100 1250" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="1100" height="1100" rx="80" ry="80" fill="white"/><g transform="translate(50,50)">${svgData.replace(/<svg[^>]*>/,'').replace('</svg>','')}</g><text x="550" y="1190" text-anchor="middle" font-family="monospace" font-size="70" font-weight="bold" fill="${textFill}">${norm}</text></svg>`
       const blob = new Blob([finalSvg],{type:'image/svg+xml;charset=utf-8'});
@@ -120,8 +117,6 @@ export default function Admin(){
 
     {tab==='gen' && <div style={{background:'#171717',padding:16,borderRadius:16,marginTop:20}}>
       <h3 style={{margin:0}}>Generador libre (imprenta)</h3>
-      <p style={{opacity:0.6,fontSize:12}}>Ahora con fondo blanco redondeado + numero transparente</p>
-
       <div style={{background:'#000',border:'1px solid #333',borderRadius:12,padding:12,marginTop:12,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
         <div><div style={{fontSize:12,fontWeight:'bold'}}>Color del número</div><div style={{fontSize:10,opacity:0.6}}>Blanca = negro, Negra = blanco</div></div>
         <div style={{display:'flex',gap:6,background:'#222',padding:4,borderRadius:10}}>
@@ -129,14 +124,11 @@ export default function Admin(){
           <button onClick={()=>setQrColor('white')} style={{padding:'8px 14px',borderRadius:8,border:'none',background:qrColor==='white'?'#fff':'transparent',color:qrColor==='white'?'#000':'#fff',fontWeight:'bold',fontSize:12}}>BLANCO</button>
         </div>
       </div>
-
       <label style={{fontSize:12,opacity:0.7, marginTop:12, display:'block'}}>Probar un solo QR:</label>
-      <div style={{display:'flex',gap:8,marginTop:6}}><span style={{padding:12,background:'#000',borderRadius:'10px 0 0 10px',border:'1px solid #333',borderRight:0,fontSize:12,opacity:0.6}}>{SITE}/</span><input value={genCode} onChange={e=>setGenCode(e.target.value)} style={{flex:1,padding:12,borderRadius:'0 10px 10px 0',border:'1px solid #333',background:'#000',color:'#fff'}}/><button onClick={()=>downloadQR(genCode,'png')} style={{padding:'0 16px',borderRadius:10,background:qrColor==='white'?'#000':'#fff',color:qrColor==='white'?'#fff':'#000',border:qrColor==='white'?'1px solid #fff':'none',fontWeight:'bold'}}>PNG {qrColor==='white'?'B':'N'}</button><button onClick={()=>downloadQR(genCode,'svg')} style={{padding:'0 16px',borderRadius:10,border:'none',background:'#333',color:'#fff'}}>SVG</button></div>
-
+      <div style={{display:'flex',gap:8,marginTop:6}}><span style={{padding:12,background:'#000',borderRadius:'10px 0 0 10px',border:'1px solid #333',borderRight:0,fontSize:12,opacity:0.6}}>{SITE}/</span><input value={genCode} onChange={e=>setGenCode(e.target.value)} style={{flex:1,padding:12,borderRadius:'0 10px 10px 0',border:'1px solid #333',background:'#000',color:'#fff'}}/><button onClick={()=>downloadQR(genCode,'png')} style={{padding:'0 16px',borderRadius:10,background:qrColor==='white'?'#000':'#fff',color:qrColor==='white'?'#fff':'#000',border:qrColor==='white'?'1px solid #fff':'none',fontWeight:'bold'}}>PNG</button><button onClick={()=>downloadQR(genCode,'svg')} style={{padding:'0 16px',borderRadius:10,border:'none',background:'#333',color:'#fff'}}>SVG</button></div>
       <hr style={{margin:'20px 0',borderColor:'#222'}}/>
       <h4>Tanda para imprenta</h4>
       <div style={{display:'flex',gap:8}}><input type="number" value={from} onChange={e=>setFrom(parseInt(e.target.value)||1)} style={{flex:1,padding:12,borderRadius:10,border:'1px solid #333',background:'#000',color:'#fff'}}/><input type="number" value={to} onChange={e=>setTo(parseInt(e.target.value)||10)} style={{flex:1,padding:12,borderRadius:10,border:'1px solid #333',background:'#000',color:'#fff'}}/></div>
-
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginTop:12, maxHeight:500, overflow:'auto'}}>
         {Array.from({length: Math.min(50, Math.max(0,to-from+1))}, (_,i)=>{
           const n=from+i; const c=pad(n); const isAssigned = assignedSet.has(c); const data = assignedMap.get(c);
@@ -145,7 +137,7 @@ export default function Admin(){
             <div style={{background:'#fff',padding:6,borderRadius:12,display:'inline-block', marginTop:isAssigned?14:0}}><QRCodeSVG value={`${SITE}/${c}?s=qr`} size={70}/></div>
             <div style={{fontSize:11,marginTop:4, textDecoration: isAssigned?'line-through': 'none', fontWeight:'bold'}}>{c} {isAssigned?` - ${data?.name}`:''}</div>
             <div style={{display:'flex', gap:4, justifyContent:'center', marginTop:4}}>
-              <button disabled={isAssigned} onClick={()=>downloadQR(c,'png')} style={{fontSize:10,padding:'4px 8px',borderRadius:6,background:isAssigned?'#333':qrColor==='white'?'#000':'#fff',color:isAssigned?'#777':qrColor==='white'?'#fff':'#000', fontWeight:'bold', border: qrColor==='white'&&!isAssigned?'1px solid #fff':'none'}}>{isAssigned?'NO':`PNG ${qrColor==='white'?'B':'N'}`}</button>
+              <button disabled={isAssigned} onClick={()=>downloadQR(c,'png')} style={{fontSize:10,padding:'4px 8px',borderRadius:6,background:isAssigned?'#333':qrColor==='white'?'#000':'#fff',color:isAssigned?'#777':qrColor==='white'?'#fff':'#000', fontWeight:'bold', border: qrColor==='white'&&!isAssigned?'1px solid #fff':'none'}}>{isAssigned?'NO':`PNG`}</button>
               <button disabled={isAssigned} onClick={()=>downloadQR(c,'svg')} style={{fontSize:10,padding:'4px 8px',borderRadius:6,border:'none',background:'#222',color:isAssigned?'#555':'#fff'}}>{isAssigned?'NO':'SVG'}</button>
             </div>
           </div>
@@ -156,7 +148,6 @@ export default function Admin(){
     {tab==='list' && <div style={{marginTop:20}}>
       <div style={{background:'#171717',padding:16,borderRadius:16}}>
         <h3 style={{margin:0}}>Vender / Asignar link</h3>
-        <label style={{fontSize:11,opacity:0.6,marginTop:12,display:'block'}}>1. Selecciona el codigo que tenes en mano:</label>
         <select value={code} onChange={e=>setCode(e.target.value)} style={{width:'100%',padding:14,borderRadius:10,border:'1px solid #333',background:'#000',color:'#fff',marginTop:6}}>
           <option value="">-- Elegi uno disponible --</option>
           {Array.from({length:1000},(_,i)=>{
@@ -173,20 +164,29 @@ export default function Admin(){
             <button onClick={()=>copy(`${SITE}/${normalize(code)}`, 'nfc')} style={{padding:'10px 14px',borderRadius:8,border:'none',background:copied==='nfc'?'#00ff88':'#fff',color:'#000',fontWeight:'bold'}}>{copied==='nfc'?'COPIADO!':'COPIAR'}</button>
           </div>
         </div>}
-        <input value={name} onChange={e=>setName(e.target.value)} placeholder="Nombre negocio (ej: Don Mario)" style={{width:'100%',padding:12,borderRadius:10,border:'1px solid #333',background:'#000',color:'#fff',marginTop:12}}/>
+        <input value={name} onChange={e=>setName(e.target.value)} placeholder="Nombre negocio" style={{width:'100%',padding:12,borderRadius:10,border:'1px solid #333',background:'#000',color:'#fff',marginTop:12}}/>
         <input value={url} onChange={e=>setUrl(e.target.value)} placeholder="Link Google Review" style={{width:'100%',padding:12,borderRadius:10,border:'1px solid #333',background:'#000',color:'#fff',marginTop:8}}/>
         <button onClick={save} style={{width:'100%',marginTop:12,padding:14,borderRadius:12,background:'#fff',color:'#000',fontWeight:'bold',border:'none'}}>Activar Tarjeta {code?normalize(code):''}</button>
       </div>
       <div style={{marginTop:16}}>
         <h4 style={{opacity:0.7}}>CRM - Vendidas ({links.length}/1000)</h4>
-        {links.map((l:any)=>(<div key={l.code} style={{background:'#171717',padding:10,borderRadius:12,marginTop:8,display:'flex',gap:10,alignItems:'center'}}>
-          <div style={{background:'#fff',padding:3,borderRadius:6}}><QRCodeSVG value={`${SITE}/${l.code}?s=qr`} size={36}/></div>
-          <div style={{flex:1}}><b>{l.code}</b> <span style={{background:'#222',fontSize:9,padding:'2px 6px',borderRadius:10,marginLeft:6}}>VENDIDA</span><div style={{fontSize:11,opacity:0.6}}>{l.name}</div><div style={{fontSize:11,marginTop:4,fontWeight:'bold',color:'#00ff88'}}>{l.clicks||0} TAPS • {l.qrClicks||0} QR <span style={{opacity:0.5,fontWeight:'normal'}}> = {(parseInt(l.clicks||0)+parseInt(l.qrClicks||0))} total</span></div></div>
-          <div style={{display:'flex',flexDirection:'column',gap:4}}>
-            <button onClick={()=>copy(`${SITE}/${l.code}`, l.code)} style={{background:'#222',border:'none',color:'#fff',padding:'8px 10px',borderRadius:8,fontSize:10}}>{copied===l.code?'COPIADO':'COPIADO'}</button>
-            <button onClick={()=>deactivate(l.code)} style={{background:'#ff000022',border:'1px solid #ff4444',color:'#ff6666',padding:'8px 10px',borderRadius:8,fontSize:10,fontWeight:'bold'}}>DESACTIVAR</button>
-          </div>
-        </div>))}
+        {links.map((l:any)=>{
+          const num = parseInt(l.code)
+          const total = (parseInt(l.clicks||0)+parseInt(l.qrClicks||0))
+          const isOld = num <= 10
+          return (<div key={l.code} style={{background:'#171717',padding:10,borderRadius:12,marginTop:8,display:'flex',gap:10,alignItems:'center'}}>
+            <div style={{background:'#fff',padding:3,borderRadius:6}}><QRCodeSVG value={`${SITE}/${l.code}?s=qr`} size={36}/></div>
+            <div style={{flex:1}}><b>{l.code}</b> <span style={{background:'#222',fontSize:9,padding:'2px 6px',borderRadius:10,marginLeft:6}}>VENDIDA</span><div style={{fontSize:11,opacity:0.6}}>{l.name}</div>
+              <div style={{fontSize:11,marginTop:4,fontWeight:'bold',color:'#00ff88'}}>
+                {isOld? `${total} TAPS` : `${l.clicks||0} TAPS • ${l.qrClicks||0} QR = ${total} total`}
+              </div>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:4}}>
+              <button onClick={()=>copy(`${SITE}/${l.code}`, l.code)} style={{background:'#222',border:'none',color:'#fff',padding:'8px 10px',borderRadius:8,fontSize:10}}>{copied===l.code?'COPIADO':'COPIAR URL'}</button>
+              <button onClick={()=>deactivate(l.code)} style={{background:'#ff000022',border:'1px solid #ff4444',color:'#ff6666',padding:'8px 10px',borderRadius:8,fontSize:10,fontWeight:'bold'}}>DESACTIVAR</button>
+            </div>
+          </div>)
+        })}
       </div>
     </div>}
   </div>
