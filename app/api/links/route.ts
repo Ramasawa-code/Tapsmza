@@ -1,63 +1,76 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-const FILE = '/tmp/links.json'
-
-function load() {
-  try {
-    const fs = require('fs')
-    if (fs.existsSync(FILE)) return JSON.parse(fs.readFileSync(FILE, 'utf8'))
-  } catch {}
-  return []
-}
-function save(data: any) {
-  try {
-    const fs = require('fs')
-    fs.writeFileSync(FILE, JSON.stringify(data))
-  } catch {}
-}
+import { getRedis } from '@/lib/redis'
 
 export async function GET(req: NextRequest) {
   try {
+    const r = getRedis()
+    if (!r) return NextResponse.json([])
     const { searchParams } = new URL(req.url)
     const reset = searchParams.get('reset')
-    let data = load()
 
     if (reset) {
       if (reset === 'all') {
-        data = data.map((l: any) => ({...l, clicks: 0, qrClicks: 0 }))
-        save(data)
-        return NextResponse.json({ ok: true, msg: 'Contadores en 0' })
+        const keys = await r.keys('taps:*')
+        for (const k of keys) {
+          await r.hset(k, { clicks: 0, qrClicks: 0 })
+        }
+        return NextResponse.json({ ok: true, msg: 'RESET ALL - contadores en 0, vendidas intactas' })
       } else {
-        const code = reset.padStart(4, '0')
-        data = data.map((l: any) => l.code === code? {...l, clicks: 0, qrClicks: 0 } : l)
-        save(data)
-        return NextResponse.json({ ok: true, msg: `Contador ${code} en 0` })
+        const code = reset.toLowerCase().padStart(4, '0')
+        await r.hset(`taps:${code}`, { clicks: 0, qrClicks: 0 })
+        return NextResponse.json({ ok: true, msg: `RESET ${code} en 0` })
       }
     }
-    return NextResponse.json(data)
-  } catch (e: any) {
+
+    const keys = await r.keys('taps:*')
+    const result = []
+    for (const k of keys) {
+      const data: any = await r.hgetall(k)
+      if (data && data.url) {
+        const code = k.replace('taps:', '')
+        result.push({
+          code,
+          url: data.url,
+          name: data.name || '',
+          clicks: parseInt(data.clicks || '0'),
+          qrClicks: parseInt(data.qrClicks || '0'),
+        })
+      }
+    }
+    result.sort((a,b) => a.code.localeCompare(b.code))
+    return NextResponse.json(result)
+  } catch {
     return NextResponse.json([])
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { url, name, code } = await req.json()
-    let data = load()
-    const i = data.findIndex((l: any) => l.code === code)
-    if (i >= 0) { data[i].url = url; data[i].name = name }
-    else { data.push({ code, url, name, clicks: 0, qrClicks: 0 }) }
-    save(data)
+    const r = getRedis()
+    if (!r) return NextResponse.json({ error: 'no redis' }, { status: 500 })
+    const { code, url, name } = await req.json()
+    const c = code.toLowerCase().padStart(4, '0')
+    const existing: any = await r.hgetall(`taps:${c}`) || {}
+    await r.hset(`taps:${c}`, { 
+      url, 
+      name, 
+      clicks: existing.clicks || 0, 
+      qrClicks: existing.qrClicks || 0 
+    })
     return NextResponse.json({ ok: true })
-  } catch { return NextResponse.json({ ok: true }) }
+  } catch {
+    return NextResponse.json({ ok: true })
+  }
 }
 
 export async function DELETE(req: NextRequest) {
   try {
-    const code = new URL(req.url).searchParams.get('code')
-    let data = load()
-    data = data.filter((l: any) => l.code!== code)
-    save(data)
+    const r = getRedis()
+    const code = new URL(req.url).searchParams.get('code')?.toLowerCase()
+    if (!r || !code) return NextResponse.json({ ok: true })
+    await r.del(`taps:${code}`)
     return NextResponse.json({ ok: true })
-  } catch { return NextResponse.json({ ok: true }) }
+  } catch {
+    return NextResponse.json({ ok: true })
+  }
 }
