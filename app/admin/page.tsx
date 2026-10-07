@@ -18,8 +18,16 @@ export default function Admin(){
   const [copied, setCopied] = useState('')
   const [qrColor, setQrColor] = useState('black')
 
-  useEffect(()=>{ if(auth) fetchLinks() }, [auth])
   useEffect(()=>{ if(typeof window!=='undefined' && localStorage.getItem('taps_auth')==='1') setAuth(true) }, [])
+
+  // ACA ESTA EL AUTO-REFRESH QUE PEDISTE
+  useEffect(()=>{
+    if(!auth) return
+    async function fetchLinks(){ const res = await fetch('/api/links'); setLinks(await res.json()) }
+    fetchLinks()
+    const id = setInterval(fetchLinks, 3000)
+    return () => clearInterval(id)
+  }, [auth])
 
   async function fetchLinks(){ const res = await fetch('/api/links'); setLinks(await res.json()) }
   function login(e:any){ e.preventDefault(); if(pass===ADMIN_PASS){ setAuth(true); localStorage.setItem('taps_auth','1') } else alert('Mal') }
@@ -172,10 +180,10 @@ export default function Admin(){
       <div style={{marginTop:16}}>
         <h4 style={{opacity:0.7}}>CRM - Vendidas ({links.length}/1000)</h4>
         {links.map((l:any)=>(<div key={l.code} style={{background:'#171717',padding:10,borderRadius:12,marginTop:8,display:'flex',gap:10,alignItems:'center'}}>
-          <div style={{background:'#fff',padding:3,borderRadius:6}}><QRCodeSVG value={`${SITE}/${l.code}`} size={36}/></div>
+          <div style={{background:'#fff',padding:3,borderRadius:6}}><QRCodeSVG value={`${SITE}/${l.code}?s=qr`} size={36}/></div>
           <div style={{flex:1}}><b>{l.code}</b> <span style={{background:'#222',fontSize:9,padding:'2px 6px',borderRadius:10,marginLeft:6}}>VENDIDA</span><div style={{fontSize:11,opacity:0.6}}>{l.name}</div><div style={{fontSize:11,marginTop:4,fontWeight:'bold',color:'#00ff88'}}>{l.clicks||0} TAPS • {l.qrClicks||0} QR <span style={{opacity:0.5,fontWeight:'normal'}}> = {(parseInt(l.clicks||0)+parseInt(l.qrClicks||0))} total</span></div></div>
           <div style={{display:'flex',flexDirection:'column',gap:4}}>
-            <button onClick={()=>copy(`${SITE}/${l.code}`, l.code)} style={{background:'#222',border:'none',color:'#fff',padding:'8px 10px',borderRadius:8,fontSize:10}}>{copied===l.code?'COPIADO':'COPIAR URL'}</button>
+            <button onClick={()=>copy(`${SITE}/${l.code}`, l.code)} style={{background:'#222',border:'none',color:'#fff',padding:'8px 10px',borderRadius:8,fontSize:10}}>{copied===l.code?'COPIADO':'COPIADO'}</button>
             <button onClick={()=>deactivate(l.code)} style={{background:'#ff000022',border:'1px solid #ff4444',color:'#ff6666',padding:'8px 10px',borderRadius:8,fontSize:10,fontWeight:'bold'}}>DESACTIVAR</button>
           </div>
         </div>))}
