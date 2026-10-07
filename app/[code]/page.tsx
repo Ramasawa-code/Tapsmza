@@ -1,12 +1,28 @@
 import { getLink } from '@/lib/redis'
 import { redirect } from 'next/navigation'
-export default async function CodePage({ params }: { params: { code: string } }) {
-  const data = await getLink(params.code.toLowerCase());
+
+export default async function CodePage({
+  params,
+  searchParams
+}: {
+  params: { code: string },
+  searchParams?: { s?: string, src?: string }
+}) {
+  const code = params.code.toLowerCase()
+  const data = await getLink(code);
+
   if (data && data.url) {
     try {
       const { getRedis } = await import('@/lib/redis');
       const r = getRedis();
-      if (r) await r.hincrby(`taps:${params.code.toLowerCase()}`, 'clicks', 1);
+      if (r) {
+        const isQR = searchParams?.s === 'qr' || searchParams?.src === 'qr'
+        if (isQR) {
+          await r.hincrby(`taps:${code}`, 'qrClicks', 1);
+        } else {
+          await r.hincrby(`taps:${code}`, 'clicks', 1);
+        }
+      }
     } catch {}
     redirect(data.url);
   }
