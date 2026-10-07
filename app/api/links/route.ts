@@ -1,94 +1,62 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// Usamos el mismo store que ya tenés (KV / archivo / memoria)
-let linksStore: any[] = [] // si usas KV, no toques esa parte, solo el GET
-
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const reset = searchParams.get('reset')
+  const cleanFake = searchParams.get('cleanFake')
 
-  // --- FIX DEFINITIVO DEL RESET ---
-  if (reset) {
-    // CASO 1: reset=all -> BORRA TODO, no crea 1000
-    if (reset === 'all') {
-      // Si usas Vercel KV / Redis:
-      // await kv.del('taps_links')
-      // Si usas archivo json:
-      linksStore = []
-      // Si usas tu lógica actual, reemplaza por esto:
-      // await db.deleteAll() o lo que tengas
-
-      // Guardado en archivo si usas fs
-      try {
-        const fs = require('fs')
-        const path = require('path')
-        const file = path.join(process.cwd(), 'data', 'links.json')
-        if (fs.existsSync(file)) fs.writeFileSync(file, JSON.stringify([]))
-      } catch {}
-
-      return NextResponse.json({ ok: true, msg: 'TODO BORRADO - 0 vendidas' })
-    }
-    
-    // CASO 2: reset=0001 -> borra solo esa
-    const code = reset.toLowerCase().padStart(4,'0')
-    linksStore = linksStore.filter((l:any) => l.code !== code)
+  const getFile = () => {
     try {
       const fs = require('fs')
       const path = require('path')
       const file = path.join(process.cwd(), 'data', 'links.json')
-      if (fs.existsSync(file)) {
-        const data = JSON.parse(fs.readFileSync(file, 'utf8'))
-        const filtrado = data.filter((l:any) => l.code !== code && l.code !== reset)
-        fs.writeFileSync(file, JSON.stringify(filtrado))
-      }
+      if (fs.existsSync(file)) return { fs, file, data: JSON.parse(fs.readFileSync(file, 'utf8')) }
     } catch {}
+    return { fs: null, file: null, data: [] }
+  }
 
+  // LIMPIADOR SEGURO - SOLO BORRA LAS TRUCHAS, DEJA 0001-0004
+  if (cleanFake === 'true') {
+    const { fs, file, data } = getFile()
+    const keep = ['0001','0002','0003','0004']
+    const filtrado = data.filter((l:any) => keep.includes(l.code))
+    if (fs && file) fs.writeFileSync(file, JSON.stringify(filtrado, null, 2))
+    return NextResponse.json({ ok: true, msg: `LIMPIEZA OK - Quedan solo ${filtrado.length}`, kept: filtrado })
+  }
+
+  // RESET TOTAL DESACTIVADO PARA SEGURIDAD
+  if (reset === 'all') {
+    return NextResponse.json({ error: 'RESET ALL DESACTIVADO por seguridad. Usa cleanFake=true' }, { status: 403 })
+  }
+  if (reset) {
+    const { fs, file, data } = getFile()
+    const code = reset.toLowerCase().padStart(4,'0')
+    if (['0001','0002','0003','0004'].includes(code)) {
+      return NextResponse.json({ error: `No se puede borrar ${code} - está protegida` }, { status: 403 })
+    }
+    const filtrado = data.filter((l:any) => l.code !== code)
+    if (fs && file) fs.writeFileSync(file, JSON.stringify(filtrado, null, 2))
     return NextResponse.json({ ok: true, msg: `Borrada ${code}` })
   }
 
-  // tu GET normal de siempre
-  try {
-    const fs = require('fs')
-    const path = require('path')
-    const file = path.join(process.cwd(), 'data', 'links.json')
-    if (fs.existsSync(file)) {
-      const data = JSON.parse(fs.readFileSync(file, 'utf8'))
-      return NextResponse.json(data)
-    }
-  } catch {}
-  
-  return NextResponse.json(linksStore)
+  const { data } = getFile()
+  return NextResponse.json(data)
 }
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
   const { code, url, name } = body
-  
+  const fs = require('fs')
+  const path = require('path')
+  const file = path.join(process.cwd(), 'data', 'links.json')
+  const dir = path.dirname(file)
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, {recursive:true})
   let current: any[] = []
-  try {
-    const fs = require('fs')
-    const path = require('path')
-    const file = path.join(process.cwd(), 'data', 'links.json')
-    const dir = path.dirname(file)
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, {recursive:true})
-    if (fs.existsSync(file)) current = JSON.parse(fs.readFileSync(file, 'utf8'))
-  } catch { current = linksStore }
-
+  if (fs.existsSync(file)) current = JSON.parse(fs.readFileSync(file, 'utf8'))
   const exists = current.find((l:any) => l.code === code)
-  if (exists) {
-    exists.url = url
-    exists.name = name
-  } else {
-    current.push({ code, url, name, clicks: 0, qrClicks: 0 })
-  }
-
-  try {
-    const fs = require('fs')
-    const path = require('path')
-    const file = path.join(process.cwd(), 'data', 'links.json')
-    fs.writeFileSync(file, JSON.stringify(current, null, 2))
-  } catch { linksStore = current }
-
+  if (exists) { exists.url = url; exists.name = name }
+  else { current.push({ code, url, name, clicks: 0, qrClicks: 0 }) }
+  fs.writeFileSync(file, JSON.stringify(current, null, 2))
   return NextResponse.json({ ok: true })
 }
 
@@ -96,18 +64,16 @@ export async function DELETE(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const code = searchParams.get('code')
   if (!code) return NextResponse.json({ error: 'falta code' }, { status: 400 })
-
-  try {
-    const fs = require('fs')
-    const path = require('path')
-    const file = path.join(process.cwd(), 'data', 'links.json')
-    if (fs.existsSync(file)) {
-      const data = JSON.parse(fs.readFileSync(file, 'utf8'))
-      const filtrado = data.filter((l:any) => l.code !== code)
-      fs.writeFileSync(file, JSON.stringify(filtrado, null, 2))
-    }
-  } catch {}
-  
-  linksStore = linksStore.filter((l:any) => l.code !== code)
+  if (['0001','0002','0003','0004'].includes(code)) {
+    return NextResponse.json({ error: `No se puede desactivar ${code} - protegida` }, { status: 403 })
+  }
+  const fs = require('fs')
+  const path = require('path')
+  const file = path.join(process.cwd(), 'data', 'links.json')
+  if (fs.existsSync(file)) {
+    const data = JSON.parse(fs.readFileSync(file, 'utf8'))
+    const filtrado = data.filter((l:any) => l.code !== code)
+    fs.writeFileSync(file, JSON.stringify(filtrado, null, 2))
+  }
   return NextResponse.json({ ok: true })
 }
