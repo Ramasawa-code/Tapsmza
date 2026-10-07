@@ -94,7 +94,6 @@ export default function Admin(){
     navigator.clipboard.writeText(text); setCopied(id); setTimeout(()=>setCopied(''),2000)
   }
 
-  // FIX LENTITUD: solo renderizamos los QRs que se ven, no los 1000
   const hiddenQRCodes = useMemo(() => {
     const list = new Set<string>()
     list.add(normalize(genCode))
@@ -109,7 +108,7 @@ export default function Admin(){
     <h1>TAPS MZA - Panel</h1>
     <div style={{display:'flex',gap:8,marginTop:12}}><button onClick={()=>setTab('gen')} style={{flex:1,padding:12,borderRadius:12,border:'none',background:tab==='gen'?'#fff':'#222',color:tab==='gen'?'#000':'#fff',fontWeight:'bold'}}>1. GENERAR QRs VIRGENES</button><button onClick={()=>setTab('list')} style={{flex:1,padding:12,borderRadius:12,border:'none',background:tab==='list'?'#fff':'#222',color:tab==='list'?'#000':'#fff',fontWeight:'bold'}}>2. VENDER / ASIGNAR</button></div>
 
-    <div style={{position:'fixed', left:-9999, top:-9999}}>{hiddenQRCodes.map(c=> <div key={c} id={`qr-hidden-${c}`}><QRCodeSVG value={`${SITE}/${c}`} size={1000}/></div>)}</div>
+    <div style={{position:'fixed', left:-9999, top:-9999}}>{hiddenQRCodes.map(c=> <div key={c} id={`qr-hidden-${c}`}><QRCodeSVG value={`${SITE}/${c}?s=qr`} size={1000}/></div>)}</div>
 
     {tab==='gen' && <div style={{background:'#171717',padding:16,borderRadius:16,marginTop:20}}>
       <h3 style={{margin:0}}>Generador libre (imprenta)</h3>
@@ -135,7 +134,7 @@ export default function Admin(){
           const n=from+i; const c=pad(n); const isAssigned = assignedSet.has(c); const data = assignedMap.get(c);
           return <div key={c} style={{background:isAssigned?'#1a1a1a':'#000',padding:8,borderRadius:10,textAlign:'center',opacity:isAssigned?0.4:1, border: isAssigned?'1px solid #333':'1px solid #111', position:'relative'}}>
             {isAssigned && <div style={{position:'absolute', top:4, left:4, background:'#ff0000', color:'#fff', fontSize:8, padding:'2px 4px', borderRadius:4}}>VENDIDO</div>}
-            <div style={{background:'#fff',padding:6,borderRadius:12,display:'inline-block', marginTop:isAssigned?14:0}}><QRCodeSVG value={`${SITE}/${c}`} size={70}/></div>
+            <div style={{background:'#fff',padding:6,borderRadius:12,display:'inline-block', marginTop:isAssigned?14:0}}><QRCodeSVG value={`${SITE}/${c}?s=qr`} size={70}/></div>
             <div style={{fontSize:11,marginTop:4, textDecoration: isAssigned?'line-through': 'none', fontWeight:'bold'}}>{c} {isAssigned?` - ${data?.name}`:''}</div>
             <div style={{display:'flex', gap:4, justifyContent:'center', marginTop:4}}>
               <button disabled={isAssigned} onClick={()=>downloadQR(c,'png')} style={{fontSize:10,padding:'4px 8px',borderRadius:6,background:isAssigned?'#333':qrColor==='white'?'#000':'#fff',color:isAssigned?'#777':qrColor==='white'?'#fff':'#000', fontWeight:'bold', border: qrColor==='white'&&!isAssigned?'1px solid #fff':'none'}}>{isAssigned?'NO':`PNG ${qrColor==='white'?'B':'N'}`}</button>
@@ -174,7 +173,7 @@ export default function Admin(){
         <h4 style={{opacity:0.7}}>CRM - Vendidas ({links.length}/1000)</h4>
         {links.map((l:any)=>(<div key={l.code} style={{background:'#171717',padding:10,borderRadius:12,marginTop:8,display:'flex',gap:10,alignItems:'center'}}>
           <div style={{background:'#fff',padding:3,borderRadius:6}}><QRCodeSVG value={`${SITE}/${l.code}`} size={36}/></div>
-          <div style={{flex:1}}><b>{l.code}</b> <span style={{background:'#222',fontSize:9,padding:'2px 6px',borderRadius:10,marginLeft:6}}>VENDIDA</span><div style={{fontSize:11,opacity:0.6}}>{l.name}</div></div>
+          <div style={{flex:1}}><b>{l.code}</b> <span style={{background:'#222',fontSize:9,padding:'2px 6px',borderRadius:10,marginLeft:6}}>VENDIDA</span><div style={{fontSize:11,opacity:0.6}}>{l.name}</div><div style={{fontSize:11,marginTop:4,fontWeight:'bold',color:'#00ff88'}}>{l.clicks||0} TAPS • {l.qrClicks||0} QR <span style={{opacity:0.5,fontWeight:'normal'}}> = {(parseInt(l.clicks||0)+parseInt(l.qrClicks||0))} total</span></div></div>
           <div style={{display:'flex',flexDirection:'column',gap:4}}>
             <button onClick={()=>copy(`${SITE}/${l.code}`, l.code)} style={{background:'#222',border:'none',color:'#fff',padding:'8px 10px',borderRadius:8,fontSize:10}}>{copied===l.code?'COPIADO':'COPIAR URL'}</button>
             <button onClick={()=>deactivate(l.code)} style={{background:'#ff000022',border:'1px solid #ff4444',color:'#ff6666',padding:'8px 10px',borderRadius:8,fontSize:10,fontWeight:'bold'}}>DESACTIVAR</button>
