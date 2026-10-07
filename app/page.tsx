@@ -1,10 +1,19 @@
+import Link from 'next/link'
+
 export default function Home(){
   return (
-    <div style={{padding:40, textAlign:'center', background:'#0a0a0a', color:'#fff', minHeight:'100vh'}}>
-      <h1 style={{fontSize:48, marginBottom:10}}>TAPS MZA</h1>
-      <p>Sistema de QR activo.</p>
-      <p style={{opacity:0.6}}>Usá /admin para gestionar tus tarjetas.</p>
-      <p style={{marginTop:30, fontSize:12, opacity:0.4}}>tapsmza.site/algo0001 → redirige a Google Reviews</p>
-    </div>
+    <main className="center-screen">
+      <div className="hero enter">
+        <span className="pill"><span className="dot dot-live"/>Sistema de QR activo</span>
+        <h1 className="wordmark hero-title">TAPS<span>MZA</span></h1>
+        <p className="lead">Un toque y tus clientes llegan directo a tu reseña de Google.</p>
+        <div className="chip">
+          <span className="mono"><b>tapsmza.site/</b>algo0001</span>
+          <span aria-hidden>→</span>
+          <span>Google Reviews</span>
+        </div>
+        <Link href="/admin" className="btn btn-primary btn-lg">Gestionar tarjetas</Link>
+      </div>
+    </main>
   )
 }

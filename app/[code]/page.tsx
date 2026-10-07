@@ -28,10 +28,14 @@ export default async function CodePage({
   }
 
   return (
-    <div style={{display:'flex', minHeight:'100vh', alignItems:'center', justifyContent:'center', flexDirection:'column', padding:24, textAlign:'center', background:'#0a0a0a', color:'#fff'}}>
-      <h1>QR Disponible</h1>
-      <p>Este codigo {params.code} aun no esta asignado.</p>
-      <a href="/admin" style={{marginTop:30, background:'#fff', color:'#000', padding:'12px 24px', borderRadius:12, textDecoration:'none', fontWeight:'bold'}}>Ir al Admin</a>
-    </div>
+    <main className="center-screen">
+      <div className="hero enter">
+        <span className="pill"><span className="dot"/>Sin asignar</span>
+        <h1 className="hero-heading">QR disponible</h1>
+        <span className="code-badge mono">{params.code}</span>
+        <p className="lead">Este código aún no está asignado a ningún negocio.</p>
+        <a href="/admin" className="btn btn-primary btn-lg">Ir al Admin</a>
+      </div>
+    </main>
   )
 }

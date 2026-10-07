@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
     result.sort((a,b) => a.code.localeCompare(b.code))
     return NextResponse.json(result)
   } catch {
-    return NextResponse.json([])
+    return NextResponse.json({ error: 'server error' }, { status: 500 })
   }
 }
 
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     })
     return NextResponse.json({ ok: true })
   } catch {
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ error: 'server error' }, { status: 500 })
   }
 }
 
@@ -71,6 +71,6 @@ export async function DELETE(req: NextRequest) {
     await r.del(`taps:${code}`)
     return NextResponse.json({ ok: true })
   } catch {
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ error: 'server error' }, { status: 500 })
   }
 }
