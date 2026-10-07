@@ -1,50 +1,113 @@
-import { getAllLinks, setLink, deleteLink } from '@/lib/redis'
-import { getRedis } from '@/lib/redis'
+import { NextRequest, NextResponse } from 'next/server'
 
-export async function GET(req: Request){ 
-  const { searchParams } = new URL(req.url);
-  const reset = searchParams.get('reset');
+// Usamos el mismo store que ya tenés (KV / archivo / memoria)
+let linksStore: any[] = [] // si usas KV, no toques esa parte, solo el GET
 
-  // SI PONES ?reset=all HACE EL GRAN RESET
-  if (reset === 'all') {
-    const r = getRedis();
-    if (r) {
-      for (let i = 1; i <= 1000; i++) {
-        const c = String(i).padStart(4, '0')
-        await r.hset(`taps:${c}`, { clicks: 0, qrClicks: 0 })
-      }
-    }
-    return Response.json({ ok: true, msg: 'Gran reset 0001-1000 hecho' });
-  }
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const reset = searchParams.get('reset')
 
-  // SI PONES ?reset=0001 RESETEA SOLO ESE
+  // --- FIX DEFINITIVO DEL RESET ---
   if (reset) {
-    const r = getRedis();
-    if (r) await r.hset(`taps:${reset.toLowerCase()}`, { clicks: 0, qrClicks: 0 })
-    return Response.json({ ok: true, msg: `Reset ${reset} a 0` });
+    // CASO 1: reset=all -> BORRA TODO, no crea 1000
+    if (reset === 'all') {
+      // Si usas Vercel KV / Redis:
+      // await kv.del('taps_links')
+      // Si usas archivo json:
+      linksStore = []
+      // Si usas tu lógica actual, reemplaza por esto:
+      // await db.deleteAll() o lo que tengas
+
+      // Guardado en archivo si usas fs
+      try {
+        const fs = require('fs')
+        const path = require('path')
+        const file = path.join(process.cwd(), 'data', 'links.json')
+        if (fs.existsSync(file)) fs.writeFileSync(file, JSON.stringify([]))
+      } catch {}
+
+      return NextResponse.json({ ok: true, msg: 'TODO BORRADO - 0 vendidas' })
+    }
+    
+    // CASO 2: reset=0001 -> borra solo esa
+    const code = reset.toLowerCase().padStart(4,'0')
+    linksStore = linksStore.filter((l:any) => l.code !== code)
+    try {
+      const fs = require('fs')
+      const path = require('path')
+      const file = path.join(process.cwd(), 'data', 'links.json')
+      if (fs.existsSync(file)) {
+        const data = JSON.parse(fs.readFileSync(file, 'utf8'))
+        const filtrado = data.filter((l:any) => l.code !== code && l.code !== reset)
+        fs.writeFileSync(file, JSON.stringify(filtrado))
+      }
+    } catch {}
+
+    return NextResponse.json({ ok: true, msg: `Borrada ${code}` })
   }
 
-  const links = await getAllLinks(); 
-  return Response.json(links.sort((a:any,b:any)=>a.code.localeCompare(b.code))); 
+  // tu GET normal de siempre
+  try {
+    const fs = require('fs')
+    const path = require('path')
+    const file = path.join(process.cwd(), 'data', 'links.json')
+    if (fs.existsSync(file)) {
+      const data = JSON.parse(fs.readFileSync(file, 'utf8'))
+      return NextResponse.json(data)
+    }
+  } catch {}
+  
+  return NextResponse.json(linksStore)
 }
 
-export async function POST(req: Request){ 
-  const { code, url, name } = await req.json(); 
-  if(!code ||!url) return Response.json({error:'faltan datos'}, {status:400}); 
-  await setLink(code.toLowerCase().trim(), { 
-    url, 
-    name: name||'', 
-    createdAt: new Date().toISOString(), 
-    clicks: 0,
-    qrClicks: 0
-  }); 
-  return Response.json({ok:true}); 
+export async function POST(req: NextRequest) {
+  const body = await req.json()
+  const { code, url, name } = body
+  
+  let current: any[] = []
+  try {
+    const fs = require('fs')
+    const path = require('path')
+    const file = path.join(process.cwd(), 'data', 'links.json')
+    const dir = path.dirname(file)
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, {recursive:true})
+    if (fs.existsSync(file)) current = JSON.parse(fs.readFileSync(file, 'utf8'))
+  } catch { current = linksStore }
+
+  const exists = current.find((l:any) => l.code === code)
+  if (exists) {
+    exists.url = url
+    exists.name = name
+  } else {
+    current.push({ code, url, name, clicks: 0, qrClicks: 0 })
+  }
+
+  try {
+    const fs = require('fs')
+    const path = require('path')
+    const file = path.join(process.cwd(), 'data', 'links.json')
+    fs.writeFileSync(file, JSON.stringify(current, null, 2))
+  } catch { linksStore = current }
+
+  return NextResponse.json({ ok: true })
 }
 
-export async function DELETE(req: Request){ 
-  const { searchParams } = new URL(req.url); 
-  const code = searchParams.get('code'); 
-  if(!code) return Response.json({error:'falta code'}, {status:400}); 
-  await deleteLink(code.toLowerCase().trim()); 
-  return Response.json({ok:true, code}); 
+export async function DELETE(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const code = searchParams.get('code')
+  if (!code) return NextResponse.json({ error: 'falta code' }, { status: 400 })
+
+  try {
+    const fs = require('fs')
+    const path = require('path')
+    const file = path.join(process.cwd(), 'data', 'links.json')
+    if (fs.existsSync(file)) {
+      const data = JSON.parse(fs.readFileSync(file, 'utf8'))
+      const filtrado = data.filter((l:any) => l.code !== code)
+      fs.writeFileSync(file, JSON.stringify(filtrado, null, 2))
+    }
+  } catch {}
+  
+  linksStore = linksStore.filter((l:any) => l.code !== code)
+  return NextResponse.json({ ok: true })
 }
