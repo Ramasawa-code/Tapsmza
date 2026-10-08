@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { AnimatePresence, m } from 'framer-motion'
+import { AnimatePresence, m } from 'motion/react'
 import { DEMOS } from './content'
 import { Icon } from './icons'
 import { Reveal } from './Reveal'

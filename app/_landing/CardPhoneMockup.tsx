@@ -1,6 +1,6 @@
 'use client'
 
-import { m, useMotionValue, useSpring, useTransform } from 'framer-motion'
+import { m, useMotionValue, useSpring, useTransform } from 'motion/react'
 import { Icon } from './icons'
 
 // Mockup 100% CSS/SVG: una tarjeta NFC "toca" el celular y la pantalla pasa

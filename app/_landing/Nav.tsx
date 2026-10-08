@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { AnimatePresence, m } from 'framer-motion'
+import { AnimatePresence, m } from 'motion/react'
 import { NAV_LINKS, whatsappUrl } from './content'
 import { Icon } from './icons'
 import { Wordmark } from './Wordmark'
