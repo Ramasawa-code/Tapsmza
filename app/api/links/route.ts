@@ -39,7 +39,8 @@ export async function GET(req: NextRequest) {
     }
     result.sort((a,b) => a.code.localeCompare(b.code))
     return NextResponse.json(result)
-  } catch {
+  } catch (error) {
+    console.log(error)
     return NextResponse.json({ error: 'server error' }, { status: 500 })
   }
 }
