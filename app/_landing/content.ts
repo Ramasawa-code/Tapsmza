@@ -1,7 +1,7 @@
 export const SITE_URL = 'https://tapsmza.site'
 
 // TODO: reemplazar por el número real (formato internacional, sin "+" ni espacios).
-const WHATSAPP_FALLBACK = '5492610000000'
+const WHATSAPP_FALLBACK = '5492613343370'
 const WHATSAPP_NUMBER = (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || WHATSAPP_FALLBACK).replace(/\D/g, '')
 
 export function whatsappUrl(message = 'Hola! Quiero consultar por las tarjetas NFC/QR de TAPS MZA.') {
