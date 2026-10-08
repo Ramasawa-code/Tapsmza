@@ -7,6 +7,7 @@ const bricolage = Bricolage_Grotesque({ subsets: ['latin'], variable: '--font-br
 const jetbrains = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains', display: 'swap' })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://tapsmza.site'),
   title: 'TAPS MZA',
   description: 'Tarjetas NFC y códigos QR que llevan a tus clientes directo a tu reseña de Google.',
 }
