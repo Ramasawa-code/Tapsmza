@@ -2,17 +2,53 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 export type TapLink = { code: string, url: string, name: string, clicks: number, qrClicks: number }
+export type LinkCode = { code: string, name: string, clicks: number, qrClicks: number }
 export type LinksStatus = 'loading' | 'ready' | 'error'
 
-const POLL_MS = 3000
+export type LinksPage = {
+  items: TapLink[]
+  codes: LinkCode[]
+  totals: { taps: number, qr: number }
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+}
+
 const TIMEOUT_MS = 10000
 
+// No polling: we fetch on load, whenever the page changes, and on demand via refresh().
 export function useLinks(enabled: boolean){
   // null = never loaded, so "loading" and "0 vendidas" can't be confused
-  const [links, setLinks] = useState<TapLink[] | null>(null)
+  const [data, setData] = useState<LinksPage | null>(null)
+  const [page, setPageState] = useState(1)
   const [failed, setFailed] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
   const inflight = useRef<Promise<void> | null>(null)
-  const lastJson = useRef('')
+  const pageRef = useRef(1)
+  pageRef.current = page
+
+  const load = useCallback(async (targetPage: number) => {
+    const ctrl = new AbortController()
+    const timer = setTimeout(()=>ctrl.abort(), TIMEOUT_MS)
+    setRefreshing(true)
+    try {
+      const res = await fetch(`/api/links?page=${targetPage}`, { cache: 'no-store', signal: ctrl.signal })
+      if(!res.ok) throw new Error(`HTTP ${res.status}`)
+      const payload = await res.json()
+      if(!payload || !Array.isArray(payload.items)) throw new Error('bad payload')
+      setData(payload)
+      setFailed(false)
+      // The server clamps out-of-range pages; keep local state in sync.
+      if(payload.page !== targetPage) setPageState(payload.page)
+    } catch {
+      setFailed(true)
+    } finally {
+      clearTimeout(timer)
+      setRefreshing(false)
+      inflight.current = null
+    }
+  }, [])
 
   // fresh: wait out any request already in flight and fetch again (use after a mutation)
   const refresh = useCallback(async (fresh = false) => {
@@ -20,41 +56,31 @@ export function useLinks(enabled: boolean){
       await inflight.current
       if(!fresh) return
     }
-    const ctrl = new AbortController()
-    const timer = setTimeout(()=>ctrl.abort(), TIMEOUT_MS)
-    const run = (async ()=>{
-      try {
-        const res = await fetch('/api/links', { cache: 'no-store', signal: ctrl.signal })
-        if(!res.ok) throw new Error(`HTTP ${res.status}`)
-        const data = await res.json()
-        if(!Array.isArray(data)) throw new Error('bad payload')
-        const json = JSON.stringify(data)
-        // identical polls keep the same array so the QR lists don't re-render every 3s
-        if(json !== lastJson.current){ lastJson.current = json; setLinks(data) }
-        setFailed(false)
-      } catch {
-        setFailed(true)
-      } finally {
-        clearTimeout(timer)
-        inflight.current = null
-      }
-    })()
+    const run = load(pageRef.current)
     inflight.current = run
     await run
-  }, [])
+  }, [load])
+
+  const setPage = useCallback((p: number) => { setPageState(Math.max(1, p)) }, [])
 
   useEffect(()=>{
-    if(!enabled) return
-    let id: ReturnType<typeof setInterval> | undefined
-    const start = () => { refresh(); id = setInterval(()=>refresh(), POLL_MS) }
-    const stop = () => { clearInterval(id); id = undefined }
-    const onVisibility = () => { if(document.hidden) stop(); else if(!id) start() }
-    if(!document.hidden) start()
-    document.addEventListener('visibilitychange', onVisibility)
-    return () => { stop(); document.removeEventListener('visibilitychange', onVisibility) }
-  }, [enabled, refresh])
+    if(enabled) refresh()
+  }, [enabled, page, refresh])
 
-  const status: LinksStatus = links ? 'ready' : failed ? 'error' : 'loading'
-  // stale: we have data on screen but the latest poll failed
-  return { links: links ?? [], status, stale: failed && links !== null, refresh }
+  const status: LinksStatus = data ? 'ready' : failed ? 'error' : 'loading'
+  // stale: we have data on screen but the latest refresh failed
+  return {
+    links: data?.items ?? [],
+    codes: data?.codes ?? [],
+    totals: data?.totals ?? { taps: 0, qr: 0 },
+    total: data?.total ?? 0,
+    page,
+    pageSize: data?.pageSize ?? 10,
+    totalPages: data?.totalPages ?? 1,
+    status,
+    stale: failed && data !== null,
+    refreshing,
+    refresh,
+    setPage,
+  }
 }

@@ -2,15 +2,17 @@
 import { useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { SITE, pad, normalize } from './qr'
-import type { LinksStatus, TapLink } from './useLinks'
+import type { LinksStatus, TapLink, LinkCode } from './useLinks'
 import { ConfirmDialog, Spinner, type PushToast } from './ui'
 
 async function copyText(text: string){
   try { await navigator.clipboard.writeText(text); return true } catch { return false }
 }
 
-export default function AssignTab({ links, status, assignedMap, refresh, toast }: {
-  links: TapLink[], status: LinksStatus, assignedMap: Map<string, TapLink>, refresh: (fresh?: boolean) => Promise<void>, toast: PushToast
+export default function AssignTab({ links, totals, total, page, totalPages, status, assignedMap, refresh, setPage, toast }: {
+  links: TapLink[], totals: { taps: number, qr: number }, total: number, page: number, totalPages: number,
+  status: LinksStatus, assignedMap: Map<string, LinkCode>,
+  refresh: (fresh?: boolean) => Promise<void>, setPage: (p: number) => void, toast: PushToast
 }){
   const [code, setCode] = useState('')
   const [url, setUrl] = useState('')
@@ -68,8 +70,8 @@ export default function AssignTab({ links, status, assignedMap, refresh, toast }
     setRetrying(false)
   }
 
-  const taps = links.reduce((n,l)=> n + (Number(l.clicks)||0), 0)
-  const qrScans = links.reduce((n,l)=> n + (Number(l.qrClicks)||0), 0)
+  const taps = totals.taps
+  const qrScans = totals.qr
   const statValue = (v: number) => ready ? v : status==='error' ? '—' : <span className="skeleton" style={{width:48, height:24, alignSelf:'center'}}/>
 
   return (
@@ -116,7 +118,7 @@ export default function AssignTab({ links, status, assignedMap, refresh, toast }
       </form>
 
       <div className="stats">
-        <div className="stat"><span className="label">Vendidas</span><div className="stat-value">{statValue(links.length)}{ready && <small>/1000</small>}</div></div>
+        <div className="stat"><span className="label">Vendidas</span><div className="stat-value">{statValue(total)}{ready && <small>/1000</small>}</div></div>
         <div className="stat stat-accent"><span className="label">Taps</span><div className="stat-value">{statValue(taps)}</div></div>
         <div className="stat stat-accent"><span className="label">QR</span><div className="stat-value">{statValue(qrScans)}</div></div>
       </div>
@@ -139,7 +141,7 @@ export default function AssignTab({ links, status, assignedMap, refresh, toast }
         <button type="button" className="btn btn-secondary btn-sm" onClick={retry} disabled={retrying} aria-busy={retrying}>{retrying && <Spinner/>}Reintentar</button>
       </div>}
 
-      {ready && links.length===0 && <div className="empty">
+      {ready && total===0 && <div className="empty">
         <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><rect x="4" y="8" width="24" height="16" rx="3"/><path d="M18 13.5a4 4 0 0 1 0 5M21 11.5a7 7 0 0 1 0 9M9 13h4"/></svg>
         <strong>Todavía no vendiste ninguna tarjeta</strong>
         <span>Cuando actives una, vas a ver acá sus taps en vivo.</span>
@@ -148,7 +150,7 @@ export default function AssignTab({ links, status, assignedMap, refresh, toast }
       {ready && links.length>0 && <div className="list">
         {links.map(l=>{
           const num = parseInt(l.code)
-          const total = (Number(l.clicks)||0)+(Number(l.qrClicks)||0)
+          const rowTotal = (Number(l.clicks)||0)+(Number(l.qrClicks)||0)
           const isOld = num <= 10
           return (<div key={l.code} className={`row${deactivating===l.code?' is-pending':''}`}>
             <div className="row-qr"><QRCodeSVG value={`${SITE}/${l.code}?s=qr`} size={44}/></div>
@@ -156,7 +158,7 @@ export default function AssignTab({ links, status, assignedMap, refresh, toast }
               <div className="row-title"><span className="row-code mono">{l.code}</span><span className="badge">Vendida</span></div>
               <div className="row-name" title={l.name}>{l.name}</div>
               <div className="row-stats">
-                {isOld ? <span>{total} taps</span> : <><span>{l.clicks||0} taps</span><span>{l.qrClicks||0} QR</span><span>{total} total</span></>}
+                {isOld ? <span>{rowTotal} taps</span> : <><span>{l.clicks||0} taps</span><span>{l.qrClicks||0} QR</span><span>{rowTotal} total</span></>}
               </div>
             </div>
             <div className="row-actions">
@@ -166,6 +168,12 @@ export default function AssignTab({ links, status, assignedMap, refresh, toast }
           </div>)
         })}
       </div>}
+
+      {ready && total>0 && <nav className="pager" aria-label="Paginación">
+        <button type="button" className="btn btn-secondary btn-sm" onClick={()=>setPage(page-1)} disabled={page<=1}>Anterior</button>
+        <span className="pager-info mono">Página {page} de {totalPages} · {total} vendidas</span>
+        <button type="button" className="btn btn-secondary btn-sm" onClick={()=>setPage(page+1)} disabled={page>=totalPages}>Siguiente</button>
+      </nav>}
 
       <ConfirmDialog open={!!confirming} title={`¿Desactivar la ${confirming}?`}
         body="Va a quedar libre para volver a vender y el link dejará de redirigir."

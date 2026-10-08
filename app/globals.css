@@ -640,6 +640,12 @@ select {
   color: var(--text-faint);
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* ───────── Tabs ───────── */
 .tabs {
   display: grid;
@@ -1078,6 +1084,20 @@ select {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.pager-info {
+  font-size: 12px;
+  color: var(--text-faint);
+  white-space: nowrap;
 }
 
 .row {

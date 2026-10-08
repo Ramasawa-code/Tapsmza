@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import { SITE, pad, normalize, downloadQR, type QrColor } from './qr'
-import type { TapLink } from './useLinks'
+import type { LinkCode } from './useLinks'
 import { Spinner, type PushToast } from './ui'
 
 const MAX_CODE = 9999
@@ -34,7 +34,7 @@ function NumberField({ id, label, value, onCommit }: { id: string, label: string
   )
 }
 
-export default function GeneratorTab({ assignedMap, toast }: { assignedMap: Map<string, TapLink>, toast: PushToast }){
+export default function GeneratorTab({ assignedMap, toast }: { assignedMap: Map<string, LinkCode>, toast: PushToast }){
   const [genCode, setGenCode] = useState('0011')
   const [from, setFrom] = useState(1)
   const [to, setTo] = useState(10)

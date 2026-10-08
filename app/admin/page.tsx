@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useMemo } from 'react'
-import { useLinks, type TapLink } from './useLinks'
-import { Splash, Toasts, useToasts } from './ui'
+import { useLinks, type LinkCode } from './useLinks'
+import { Splash, Toasts, useToasts, Spinner } from './ui'
 import LoginForm from './LoginForm'
 import GeneratorTab from './GeneratorTab'
 import AssignTab from './AssignTab'
@@ -12,7 +12,7 @@ export default function Admin(){
   // null until localStorage has been read, so the login form never flashes for a logged-in user
   const [auth, setAuth] = useState<boolean | null>(null)
   const [tab, setTab] = useState<'gen'|'list'>('gen')
-  const { links, status, stale, refresh } = useLinks(auth === true)
+  const { links, codes, totals, total, page, totalPages, status, stale, refreshing, refresh, setPage } = useLinks(auth === true)
   const { toasts, push } = useToasts()
 
   useEffect(()=>{
@@ -28,19 +28,24 @@ export default function Admin(){
     return true
   }
 
-  const assignedMap = useMemo(()=>{ const m=new Map<string, TapLink>(); links.forEach(l=>m.set(l.code.toLowerCase(), l)); return m }, [links])
+  const assignedMap = useMemo(()=>{ const m=new Map<string, LinkCode>(); codes.forEach(l=>m.set(l.code.toLowerCase(), l)); return m }, [codes])
 
   if(auth===null) return <Splash/>
   if(!auth) return <LoginForm onLogin={login}/>
 
   const live = status==='ready' && !stale
-  const connection = live ? 'En vivo' : status==='loading' ? 'Conectando…' : 'Sin conexión'
+  const connection = live ? 'Actualizado' : status==='loading' ? 'Conectando…' : 'Sin conexión'
 
   return (
     <main className="shell">
       <header className="topbar">
         <div className="topbar-brand"><h1 className="wordmark">TAPS<span>MZA</span></h1><small>Panel</small></div>
-        <span className="pill" role="status"><span className={`dot${live?' dot-live':status==='loading'?'':' dot-down'}`}/>{connection}</span>
+        <div className="topbar-actions">
+          <button type="button" className="btn btn-secondary btn-sm" onClick={()=>refresh(true)} disabled={refreshing} aria-busy={refreshing}>
+            {refreshing && <Spinner/>}Actualizar
+          </button>
+          <span className="pill" role="status"><span className={`dot${live?' dot-live':status==='loading'?'':' dot-down'}`}/>{connection}</span>
+        </div>
       </header>
 
       <div className="tabs" role="tablist">
@@ -53,7 +58,8 @@ export default function Admin(){
         <GeneratorTab assignedMap={assignedMap} toast={push}/>
       </section>
       <section role="tabpanel" id="panel-list" aria-labelledby="tab-list" className="panel" hidden={tab!=='list'}>
-        <AssignTab links={links} status={status} assignedMap={assignedMap} refresh={refresh} toast={push}/>
+        <AssignTab links={links} totals={totals} total={total} page={page} totalPages={totalPages} status={status}
+          assignedMap={assignedMap} refresh={refresh} setPage={setPage} toast={push}/>
       </section>
 
       <Toasts toasts={toasts}/>

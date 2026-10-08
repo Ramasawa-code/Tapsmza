@@ -1,4 +1,4 @@
-import { getLink } from '@/lib/redis'
+import { getLink, incrementCounter } from '@/lib/links'
 import { redirect } from 'next/navigation'
 
 export default async function CodePage({
@@ -9,22 +9,21 @@ export default async function CodePage({
   searchParams?: { s?: string, src?: string }
 }) {
   const code = params.code.toLowerCase()
-  const data = await getLink(code);
+
+  let data = null
+  try {
+    data = await getLink(code)
+  } catch {
+    // A transient DB error shouldn't 500 a customer tap; treat as unassigned.
+    data = null
+  }
 
   if (data && data.url) {
     try {
-      const { getRedis } = await import('@/lib/redis');
-      const r = getRedis();
-      if (r) {
-        const isQR = searchParams?.s === 'qr' || searchParams?.src === 'qr'
-        if (isQR) {
-          await r.hincrby(`taps:${code}`, 'qrClicks', 1);
-        } else {
-          await r.hincrby(`taps:${code}`, 'clicks', 1);
-        }
-      }
+      const isQR = searchParams?.s === 'qr' || searchParams?.src === 'qr'
+      await incrementCounter(code, isQR)
     } catch {}
-    redirect(data.url);
+    redirect(data.url)
   }
 
   return (
